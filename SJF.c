@@ -1,12 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// Define a structure for a process
+struct process
+{
+    int id;
+    int burst_time;
+};
+
+// Define a structure for a queue
 struct queue
 {
     int size;
     int frontInd;
     int backInd;
-    int *arr;
+    struct process *arr;
 };
 
 // Function to push an element into the queue
@@ -15,7 +23,7 @@ void push(struct queue *buffer, int burst_time)
     if (buffer->backInd == buffer->size - 1)
         return; // Queue is full, cannot push more elements.
 
-    buffer->arr[++buffer->backInd] = burst_time;
+    buffer->arr[++buffer->backInd].burst_time = burst_time;
 }
 
 // Function to pop an element from the queue
@@ -25,8 +33,31 @@ int pop(struct queue *buffer)
     {
         return -1; // Queue is empty, cannot pop.
     }
-    int popped = buffer->arr[++buffer->frontInd];
+    int popped = buffer->arr[++buffer->frontInd].burst_time;
     return popped;
+}
+
+// Function to swap two process elements
+void swap(struct process *a, struct process *b)
+{
+    struct process temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+// Function to sort an array of processes by burst time
+void sort(struct process arr[], int n)
+{
+    for (int i = 0; i < n - 1; i++)
+    {
+        for (int j = 0; j < n - i - 1; j++)
+        {
+            if (arr[j].burst_time > arr[j + 1].burst_time)
+            {
+                swap(&arr[j], &arr[j + 1]);
+            }
+        }
+    }
 }
 
 int main()
@@ -37,26 +68,28 @@ int main()
 
     // Initialize the queue structure
     struct queue *buffer = (struct queue *)malloc(sizeof(struct queue));
-    buffer->arr = (int *)malloc(n * sizeof(int));
+    buffer->arr = (struct process *)malloc(n * sizeof(struct process));
     int *wait = (int *)malloc(n * sizeof(int));
     int *turn_around = (int *)malloc(n * sizeof(int));
     buffer->size = n;
     buffer->frontInd = -1;
     buffer->backInd = -1;
 
-    printf("Enter the burst time of each process in accordance with their arrival:\n");
+    printf("Enter the burst time of each process:\n");
     for (int i = 0; i < n; i++)
     {
+        printf("P%d:", i + 1);
         scanf("%d", &burst_time);
+        buffer->arr[i].id = i + 1;
         push(buffer, burst_time);
     }
 
-    int arr_time = 0;
+    sort(buffer->arr, n);
     int wait_time = 0;
     float total_waiting_time = 0.0;
     float total_turnaround_time = 0.0;
     wait[0] = 0;
-    turn_around[0] = buffer->arr[0];
+    turn_around[0] = buffer->arr[0].burst_time;
     int j = 1;
 
     // Process elements from the queue
@@ -65,7 +98,7 @@ int main()
         int prev = pop(buffer);
         wait_time += prev;
         wait[j] = wait_time;
-        turn_around[j] = wait[j] + buffer->arr[j];
+        turn_around[j] = wait[j] + buffer->arr[j].burst_time;
         j++;
     }
 
@@ -79,7 +112,7 @@ int main()
     printf("\nProcess\t  Burst Time\tWaiting Time\tTurnAround Time\n");
     for (int i = 0; i < n; i++)
     {
-        printf("  %d\t   %d\t\t  %d\t\t  %d\n", i + 1, buffer->arr[i], wait[i], turn_around[i]);
+        printf("  P%d\t   %d\t\t  %d\t\t  %d\n", buffer->arr[i].id, buffer->arr[i].burst_time, wait[i], turn_around[i]);
     }
 
     float avg_wait_time = total_waiting_time / n;
