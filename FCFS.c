@@ -1,97 +1,77 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-struct queue
+// structure to define a process
+struct process
 {
-    int size;
-    int frontInd;
-    int backInd;
-    int *arr;
+    int id;
+    int burst_time;
+    int arrival_time;
+    int waiting_time;
+    int turnaround_time;
 };
-
-// Function to push an element into the queue
-void push(struct queue *buffer, int burst_time)
-{
-    if (buffer->backInd == buffer->size - 1)
-        return; // Queue is full, cannot push more elements.
-
-    buffer->arr[++buffer->backInd] = burst_time;
-}
-
-// Function to pop an element from the queue
-int pop(struct queue *buffer)
-{
-    if (buffer->frontInd == buffer->backInd)
-    {
-        return -1; // Queue is empty, cannot pop.
-    }
-    int popped = buffer->arr[++buffer->frontInd];
-    return popped;
-}
 
 int main()
 {
-    int n, burst_time;
+    int n;
     printf("Enter the number of processes:\n");
     scanf("%d", &n);
+    struct process *p = (struct process *)malloc(n * sizeof(struct process));
 
-    // Initialize the queue structure
-    struct queue *buffer = (struct queue *)malloc(sizeof(struct queue));
-    buffer->arr = (int *)malloc(n * sizeof(int));
-    int *wait = (int *)malloc(n * sizeof(int));
-    int *turn_around = (int *)malloc(n * sizeof(int));
-    buffer->size = n;
-    buffer->frontInd = -1;
-    buffer->backInd = -1;
-
-    printf("Enter the burst time of each process in accordance with their arrival:\n");
+    printf("Enter the arrival time and burst time of each process:\n");
     for (int i = 0; i < n; i++)
     {
-        scanf("%d", &burst_time);
-        push(buffer, burst_time);
+        printf("P%d:", i + 1);
+        scanf("%d", &p[i].arrival_time);
+        scanf("%d", &p[i].burst_time);
+        p[i].id = i + 1;
     }
 
-    int arr_time = 0;
-    int wait_time = 0;
     float total_waiting_time = 0.0;
     float total_turnaround_time = 0.0;
-    wait[0] = 0;
-    turn_around[0] = buffer->arr[0];
-    int j = 1;
+    int remaining_process = n;
+    int current_time = 0;
+    int *completed = (int *)malloc(n * sizeof(int));
 
-    // Process elements from the queue
-    while (buffer->frontInd < buffer->backInd - 1)
+    for (int i = 0; i < n; i++)
     {
-        int prev = pop(buffer);
-        wait_time += prev;
-        wait[j] = wait_time;
-        turn_around[j] = wait[j] + buffer->arr[j];
-        j++;
+        completed[i] = 0;
+    }
+
+    while (remaining_process > 0)
+    {
+        for (int i = 0; i < n; i++)
+        {
+            //if the process is completed or it has not arrived at the current then continue
+            if (completed[i] == 1 || p[i].arrival_time > current_time)
+                continue;
+         
+            int execute_time = p[i].burst_time;
+            current_time += execute_time;
+            completed[i] = 1;
+            p[i].turnaround_time = current_time - p[i].arrival_time;
+            p[i].waiting_time =p[i].turnaround_time-p[i].burst_time;
+            remaining_process--;
+        }
     }
 
     for (int i = 0; i < n; i++)
     {
-        total_waiting_time += wait[i];
-        total_turnaround_time += turn_around[i];
+        total_waiting_time += p[i].waiting_time;
+        total_turnaround_time += p[i].turnaround_time;
     }
 
-    // Print the results
-    printf("\nProcess\t  Burst Time\tWaiting Time\tTurnAround Time\n");
+    printf("\nProcess\t  Arrival Time\tBurst_time\tWaiting Time\tTurnAround Time\n");
     for (int i = 0; i < n; i++)
     {
-        printf("  %d\t   %d\t\t  %d\t\t  %d\n", i + 1, buffer->arr[i], wait[i], turn_around[i]);
+        printf("  P%d\t   %d\t\t  %d\t\t  %d\t\t  %d\n", p[i].id, p[i].arrival_time, p[i].burst_time, p[i].waiting_time, p[i].turnaround_time);
     }
 
     float avg_wait_time = total_waiting_time / n;
     float avg_turn_time = total_turnaround_time / n;
-    printf("\nAverage Waiting Time: %.2f\n", avg_wait_time);
-    printf("Average TurnAround Time: %.2f\n", avg_turn_time);
+    printf("\nAverage Waiting Time:%.2f\n", avg_wait_time);
+    printf("Average TurnAround Time:%.2f\n", avg_turn_time);
 
-    // Clean up allocated memory
-    free(buffer->arr);
-    free(buffer);
-    free(wait);
-    free(turn_around);
 
     return 0;
 }
